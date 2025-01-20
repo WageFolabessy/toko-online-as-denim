@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('category_name', 50)->unique();
             $table->unsignedBigInteger('parent_category_id')->nullable();
+            $table->string('image');
             $table->timestamps();
             $table->foreign('parent_category_id')->references('id')->on('categories')->onDelete('SET NULL');
         });

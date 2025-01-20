@@ -15,12 +15,18 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        // Validasi data yang diterima
         $validator = Validator::make($request->all(), [
-            'category_name' => 'required|unique:categories,category_name',
-            'parent_category_id' => 'nullable|exists:categories,id'
+            'category_name' => 'required|string|max:50|unique:categories,category_name',
+            'parent_category_id' => 'nullable|exists:categories,id',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ], [
             'category_name.required' => 'Nama kategori wajib diisi.',
-            'category_name.unique' => 'Nama kategori sudah terdaftar.'
+            'category_name.unique' => 'Nama kategori sudah terdaftar.',
+            'parent_category_id.exists' => 'Kategori induk tidak ditemukan.',
+            'image.required' => 'Gambar kategori wajib diunggah.',
+            'image.image' => 'File yang diunggah harus berupa gambar.',
+            'image.max' => 'Ukuran gambar terlalu besar. Maksimal 2MB.',
         ]);
 
         if ($validator->fails()) {
@@ -29,16 +35,26 @@ class CategoryController extends Controller
             ], 422);
         }
 
+        // Menyimpan gambar kategori
+        $imagePath = $request->file('image')->store('images/categories', 'public');
+
+        // Menyimpan data kategori
         $category = new Category;
         $category->category_name = $request->category_name;
         $category->parent_category_id = $request->parent_category_id;
+        $category->image = $imagePath;
         $category->save();
 
-        return response()->json([$category, 'message' => 'Kategori berhasil ditambahkan.']);
+        return response()->json([
+            'category' => $category,
+            'message' => 'Kategori berhasil ditambahkan.',
+        ]);
     }
+
 
     public function show($id)
     {
+        // Mencari kategori berdasarkan ID
         $category = Category::find($id);
 
         if (!$category) {
@@ -53,14 +69,13 @@ class CategoryController extends Controller
     }
 
 
+
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'category_name' => 'required|unique:categories,category_name,' . $id,
-            'parent_category_id' => 'nullable|exists:categories,id'
-        ], [
-            'category_name.required' => 'Nama kategori wajib diisi.',
-            'category_name.unique' => 'Nama kategori sudah terdaftar.',
+            'category_name' => 'required|string|max:50|unique:categories,category_name,' . $id,
+            'parent_category_id' => 'nullable|exists:categories,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -75,6 +90,15 @@ class CategoryController extends Controller
             return response()->json([
                 'message' => 'Kategori tidak ditemukan.',
             ], 404);
+        }
+
+        if ($request->hasFile('image')) {
+            if (file_exists(public_path('storage/' . $category->image))) {
+                unlink(public_path('storage/' . $category->image));
+            }
+
+            $imagePath = $request->file('image')->store('images/categories', 'public');
+            $category->image = $imagePath;
         }
 
         $category->category_name = $request->category_name;
@@ -87,6 +111,7 @@ class CategoryController extends Controller
         ]);
     }
 
+
     public function destroy($id)
     {
         $category = Category::find($id);
@@ -95,6 +120,10 @@ class CategoryController extends Controller
             return response()->json([
                 'message' => 'Kategori tidak ditemukan.',
             ], 404);
+        }
+
+        if (file_exists(public_path('storage/' . $category->image))) {
+            unlink(public_path('storage/' . $category->image));
         }
 
         $category->delete();

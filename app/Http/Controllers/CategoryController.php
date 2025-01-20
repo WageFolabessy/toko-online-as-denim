@@ -51,7 +51,6 @@ class CategoryController extends Controller
         ]);
     }
 
-
     public function show($id)
     {
         // Mencari kategori berdasarkan ID
@@ -67,8 +66,6 @@ class CategoryController extends Controller
             'category' => $category,
         ]);
     }
-
-
 
     public function update(Request $request, $id)
     {
@@ -110,7 +107,6 @@ class CategoryController extends Controller
             'message' => 'Kategori berhasil diperbarui.',
         ]);
     }
-
 
     public function destroy($id)
     {

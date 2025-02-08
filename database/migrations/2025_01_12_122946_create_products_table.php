@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('size', 20);
             $table->integer('stock');
             $table->text('description')->nullable();
+            $table->string('slug', 50)->unique();
             $table->timestamps();
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
         });

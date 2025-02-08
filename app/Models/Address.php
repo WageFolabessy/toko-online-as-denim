@@ -8,11 +8,14 @@ class Address extends Model
 {
     use HasFactory;
     
-    protected $fillable = ['recipient_name', 'address_line1', 'address_line2', 'province', 'city', 'postal_code'];
+    protected $fillable = ['recipient_name', 'address_line1', 'address_line2', 'province', 'city', 'postal_code', 'is_default'];
 
-    // Relasi ke SiteUserAddress
-    public function userAddresses()
+    protected $casts = [
+        'is_default' => 'boolean',
+    ];    
+
+    public function user()
     {
-        return $this->hasMany(SiteUserAddress::class, 'address_id');
+        return $this->belongsTo(SiteUser::class, 'site_user_id');
     }
 }

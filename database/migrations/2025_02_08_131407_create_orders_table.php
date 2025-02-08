@@ -11,19 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('addresses', function (Blueprint $table) {
+        Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->string('recipient_name', 50);
-            $table->string('address_line1', 100);
-            $table->string('address_line2', 50)->nullable();
-            $table->string('province', 50);
-            $table->string('city', 50);
-            $table->string('postal_code', 10);
             $table->unsignedBigInteger('site_user_id');
-            $table->boolean('is_default')->default(false);
+            $table->unsignedBigInteger('address_id');
+            $table->string('order_number')->unique();
+            $table->integer('total_amount');
+            $table->integer('shipping_cost');
+            $table->enum('status', ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
             $table->timestamps();
+        
             $table->foreign('site_user_id')->references('id')->on('site_users')->onDelete('cascade');
+            $table->foreign('address_id')->references('id')->on('addresses')->onDelete('cascade');
         });
+        
     }
 
     /**
@@ -31,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('addresses');
+        Schema::dropIfExists('orders');
     }
 };

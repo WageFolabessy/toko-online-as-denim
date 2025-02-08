@@ -11,15 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('site_user_addresses', function (Blueprint $table) {
+        Schema::create('product_reviews', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('site_user_id');
-            $table->unsignedBigInteger('address_id');
-            $table->boolean('is_default');
+            $table->unsignedBigInteger('product_id');
+            $table->integer('rating');
+            $table->text('review');
             $table->timestamps();
+        
             $table->foreign('site_user_id')->references('id')->on('site_users')->onDelete('cascade');
-            $table->foreign('address_id')->references('id')->on('addresses')->onDelete('cascade');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
+        
     }
 
     /**
@@ -27,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sitr_user_addresses');
+        Schema::dropIfExists('product_reviews');
     }
 };

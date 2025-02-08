@@ -14,10 +14,9 @@ return new class extends Migration
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->string('category_name', 50)->unique();
-            $table->unsignedBigInteger('parent_category_id')->nullable();
             $table->string('image');
+            $table->string('slug')->unique();
             $table->timestamps();
-            $table->foreign('parent_category_id')->references('id')->on('categories')->onDelete('SET NULL');
         });
     }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -21,5 +22,27 @@ class Product extends Model
     public function images()
     {
         return $this->hasMany(ProductImage::class, 'product_id');
+    }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($product) {
+            $product->slug = self::generateSlug($product->product_name);
+        });
+
+        static::updating(function ($product) {
+            $product->slug = self::generateSlug($product->product_name);
+        });
+    }
+
+    private static function generateSlug($name)
+    {
+        $slug = Str::slug($name);
+
+        $count = Product::whereRaw("slug RLIKE '^{$slug}(.[0-9]+)?$'")->count();
+
+        return $count ? "{$slug}-{$count}" : $slug;
     }
 }

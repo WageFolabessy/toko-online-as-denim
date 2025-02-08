@@ -10,7 +10,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        return Product::all();
+        return Product::with('images', 'category')->get();
     }
 
     public function store(Request $request)
@@ -53,9 +53,9 @@ class ProductController extends Controller
         ]);
     }
 
-    public function show($id)
+    public function edit($id)
     {
-        $product = Product::find($id);
+        $product = Product::with('images')->find($id);
 
         if (!$product) {
             return response()->json([
@@ -123,6 +123,21 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Produk berhasil dihapus.',
+        ]);
+    }
+
+    public function getProductDetail($slug)
+    {
+        $product = Product::with('images')->where('slug', $slug)->first();
+
+        if (!$product) {
+            return response()->json([
+                'message' => 'produk tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'product' => $product,
         ]);
     }
 }

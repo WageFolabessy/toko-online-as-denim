@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class SiteUser extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     protected $fillable = [
         'name',
@@ -29,15 +30,14 @@ class SiteUser extends Authenticatable
         ];
     }
 
-    // Relasi ke SiteUserAddress
-    public function addresses()
-    {
-        return $this->hasMany(SiteUserAddress::class, 'site_user_id');
-    }
-
     // Relasi ke ShoppingCart
     public function shoppingCart()
     {
         return $this->hasOne(ShoppingCart::class, 'site_user_id');
+    }
+
+    public function addresses()
+    {
+        return $this->hasMany(Address::class, 'site_user_id');
     }
 }

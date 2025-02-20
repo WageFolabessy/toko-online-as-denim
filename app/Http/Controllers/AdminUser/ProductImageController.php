@@ -1,29 +1,20 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\AdminUser;
 
 use Illuminate\Http\Request;
 use App\Models\ProductImage;
-use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Controllers\Controller;
 
 class ProductImageController extends Controller
 {
-    // Display all product images
     public function index()
     {
         $productImages = ProductImage::with('product')->get();
         return response()->json($productImages);
     }
 
-    // Display images for a specific product
-    public function showByProduct($productId)
-    {
-        $images = ProductImage::where('product_id', $productId)->get();
-        return response()->json($images);
-    }
-
-    // Store a new product image
     public function store(Request $request)
     {
         $request->validate([
@@ -60,7 +51,6 @@ class ProductImageController extends Controller
         ], 201);
     }
 
-    // Update a product image
     public function update(Request $request, $id)
     {
         $productImage = ProductImage::findOrFail($id);
@@ -100,17 +90,25 @@ class ProductImageController extends Controller
             'data' => $productImage,
         ]);
     }
-    
-    // Delete a product image
+
     public function destroy($id)
     {
-        $productImage = ProductImage::findOrFail($id);
+        $productImage = ProductImage::find($id);
 
-        // Delete the image file from storage
+        if (!$productImage) {
+            return response()->json([
+                'message' => 'Gambar tidak ditemukan.',
+            ], 404);
+        }
+
+        // Delete the image file
         Storage::disk('public')->delete($productImage->image);
 
+        // Delete the database record
         $productImage->delete();
 
-        return response()->json(['message' => 'Product image deleted successfully.']);
+        return response()->json([
+            'message' => 'Gambar berhasil dihapus.',
+        ], 200);
     }
 }

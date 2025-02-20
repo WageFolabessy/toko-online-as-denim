@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'site_users',
         ],
+        'admin_users' => [
+            'driver' => 'session',
+            'provider' => 'admin_users',
+        ],
     ],
 
     /*
@@ -63,6 +67,10 @@ return [
         'site_users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\SiteUser::class),
+        ],
+        'admin_users' => [
+            'driver' => 'eloquent',
+            'model' => env('AUTH_MODEL', App\Models\AdminUser::class),
         ],
 
         // 'users' => [
@@ -93,6 +101,12 @@ return [
     'passwords' => [
         'site_users' => [
             'provider' => 'site_users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'admin_users' => [
+            'provider' => 'admin_users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,

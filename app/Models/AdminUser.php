@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class SiteUser extends Authenticatable
+class AdminUser extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
+
+    protected $guard = 'admin_users';
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'is_active'
     ];
 
     protected $hidden = [
@@ -28,20 +29,5 @@ class SiteUser extends Authenticatable
         return [
             'password' => 'hashed',
         ];
-    }
-
-    public function shoppingCart()
-    {
-        return $this->hasOne(ShoppingCart::class, 'site_user_id');
-    }
-
-    public function addresses()
-    {
-        return $this->hasMany(Address::class, 'site_user_id');
-    }
-
-    public function orders()
-    {
-        return $this->hasMany(Order::class, 'site_user_id');
     }
 }

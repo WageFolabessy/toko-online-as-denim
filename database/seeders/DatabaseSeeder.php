@@ -6,6 +6,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\SiteUser;
 use App\Models\Address;
+use App\Models\AdminUser;
 use App\Models\SiteUserAddress;
 use App\Models\Category;
 use App\Models\Product;
@@ -22,18 +23,15 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        // SiteUser::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        AdminUser::factory()->create();
 
-        SiteUser::factory(5)->create();
-        Address::factory(5)->create();
-        SiteUserAddress::factory(5)->create();
-        Category::factory(5)->create();
-        Product::factory(5)->create();
-        ProductImage::factory(5)->create();
-        ShoppingCart::factory(5)->create();
-        ShoppingCartItem::factory(5)->create();
+        // SiteUser::factory(5)->create();
+        // Address::factory(5)->create();
+        // SiteUserAddress::factory(5)->create();
+        // Category::factory(5)->create();
+        // Product::factory(5)->create();
+        // ProductImage::factory(5)->create();
+        // ShoppingCart::factory(5)->create();
+        // ShoppingCartItem::factory(5)->create();
     }
 }

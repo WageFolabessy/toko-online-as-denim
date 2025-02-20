@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\SiteUser>
  */
-class SiteUserFactory extends Factory
+class AdminUserFactory extends Factory
 {
     /**
      * Define the model's default state.

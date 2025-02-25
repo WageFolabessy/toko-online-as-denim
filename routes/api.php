@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SiteUser\ForgotPasswordController;
 use Illuminate\Support\Facades\Route;
 
 // ADMIN USER CONTROLLER
@@ -8,15 +9,20 @@ use App\Http\Controllers\AdminUser\CategoryController;
 use App\Http\Controllers\AdminUser\DashboardController;
 use App\Http\Controllers\AdminUser\ProductController;
 use App\Http\Controllers\AdminUser\SiteUserDetailController;
+use App\Http\Controllers\AdminUser\OrderController as AdminUserOrderController;
+use App\Http\Controllers\AdminUser\PaymentController as AdminUserPaymentController;
+use App\Http\Controllers\AdminUser\ShipmentController as AdminUserShipmentController;
+use App\Http\Controllers\AdminUser\ProductReviewController as AdminUserProductReviewController;
 
 // SITE USER CONTROLLER
 use App\Http\Controllers\SiteUser\AuthController;
 use App\Http\Controllers\SiteUser\AddressController;
-use App\Http\Controllers\SiteUser\OrderController;
-use App\Http\Controllers\SiteUser\PaymentController;
-use App\Http\Controllers\SiteUser\ShipmentController;
+use App\Http\Controllers\SiteUser\OrderController as SiteUserOrderController;
+use App\Http\Controllers\SiteUser\PaymentController as SiteUserPaymentController;
+use App\Http\Controllers\SiteUser\ShipmentController as SiteUserShipmentController;
 use App\Http\Controllers\SiteUser\ShoppingCartController;
 use App\Http\Controllers\SiteUser\CollectionController;
+use App\Http\Controllers\SiteUser\ProductReviewController as SiteUserProductReviewController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -73,8 +79,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/admin/product/{product}', [ProductController::class, 'destroy']);
 
     // Order
-    Route::get('/admin/orders', [OrderController::class, 'index']);
-    Route::get('/admin/orders/{id}', [OrderController::class, 'show']);
+    Route::get('/admin/orders', [AdminUserOrderController::class, 'index']);
+    Route::get('/admin/orders/{id}', [AdminUserOrderController::class, 'show']);
+    Route::put('/admin/orders/{id}', [AdminUserOrderController::class, 'updateStatus']);
+    
+    // Payment
+    Route::get('/admin/payments', [AdminUserPaymentController::class, 'index']);
+    Route::get('/admin/payments/{id}', [AdminUserPaymentController::class, 'show']);
+    Route::put('/admin/payments/{id}', [AdminUserPaymentController::class, 'updateStatus']);
+    
+    // Shipment
+    Route::get('/admin/shipments', [AdminUserShipmentController::class, 'index']);
+    Route::put('/admin/shipments/{id}', [AdminUserShipmentController::class, 'update']);
+
+    // Proudct Review
+    Route::get('/admin/reviews', [AdminUserProductReviewController::class, 'index']);
+    Route::get('/admin/reviews/{id}', [AdminUserProductReviewController::class, 'show']);
+
 });
 
 // SITE USER
@@ -98,18 +119,32 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/user/addresses/{address}', [AddressController::class, 'destroy']);
 
     // Order
-    Route::get('/user/user_orders', [OrderController::class, 'getUserOrder']);
-    Route::get('/user/user_orders/{id}', [OrderController::class, 'showUserOrder']);
+    Route::get('/user/user_orders', [SiteUserOrderController::class, 'getUserOrder']);
+    Route::get('/user/user_orders/{id}', [SiteUserOrderController::class, 'showUserOrder']);
 
+    // Proudct Review
+    Route::post('/user/product/{productId}/reviews', [SiteUserProductReviewController::class, 'store']);
+    Route::get('/user/product/{productId}/review-eligibility', [SiteUserProductReviewController::class, 'reviewEligibility']);
+    Route::put('/user/reviews/{reviewId}', [SiteUserProductReviewController::class, 'updateReview']);
+    Route::delete('/user/reviews/{reviewId}', [SiteUserProductReviewController::class, 'destroyReview']);
+    
     // Payment
-    Route::post('/midtrans/snap-token', [PaymentController::class, 'initiatePayment']);
+    Route::post('/midtrans/snap-token', [SiteUserPaymentController::class, 'initiatePayment']);
 
     // Shipping Cost
-    Route::post('/calculate-shipping-cost', [ShipmentController::class, 'calculateShippingCost']);
+    Route::post('/calculate-shipping-cost', [SiteUserShipmentController::class, 'calculateShippingCost']);
+
 });
 
-Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification']);
+Route::post('/midtrans/notification', [SiteUserPaymentController::class, 'handleNotification']);
 
 Route::get('/user/get_categories', [CollectionController::class, 'getAllCategories']);
 Route::get('/user/get_products', [CollectionController::class, 'getAllProducts']);
 Route::get('/user/product/{slug}/detail', [CollectionController::class, 'getProductDetail']);
+
+// Proudct Review
+Route::get('/user/product/{productId}/reviews', [SiteUserProductReviewController::class, 'index']);
+
+// Forgot Password
+Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail']);
+Route::post('/password/reset', [ForgotPasswordController::class, 'reset']);

@@ -10,7 +10,7 @@ class SiteUserDetailController extends Controller
 {
     public function index()
     {
-        $admins = SiteUser::all();
+        $admins = SiteUser::orderBy('created_at', 'desc')->get();
         return response()->json($admins, 200);
     }
 

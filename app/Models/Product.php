@@ -33,7 +33,9 @@ class Product extends Model
         });
 
         static::updating(function ($product) {
-            $product->slug = self::generateSlug($product->product_name);
+            if ($product->isDirty('product_name')) {
+                $product->slug = self::generateSlug($product->product_name);
+            }
         });
     }
 

@@ -7,28 +7,7 @@ use App\Models\Order;
 use App\Http\Controllers\Controller;
 
 class OrderController extends Controller
-{
-    public function index()
-    {
-        $orders = Order::with(['orderItems.product', 'address', 'user'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return response()->json($orders, 200);
-    }
-
-    public function show($id)
-    {
-        $order = Order::with(['orderItems.product', 'address', 'user'])
-            ->find($id);
-
-        if (!$order) {
-            return response()->json(['message' => 'Pesanan tidak ditemukan.'], 404);
-        }
-
-        return response()->json($order, 200);
-    }
-    
+{    
     public function getUserOrder(Request $request)
     {
         $user = $request->user();

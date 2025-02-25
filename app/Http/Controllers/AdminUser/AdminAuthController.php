@@ -14,7 +14,7 @@ class AdminAuthController extends Controller
 {
     public function index()
     {
-        $admins = AdminUser::all();
+        $admins = AdminUser::orderBy('created_at', 'desc')->get();
         return response()->json($admins, 200);
     }
 

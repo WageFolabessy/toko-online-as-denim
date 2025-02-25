@@ -13,7 +13,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['images', 'category'])->get();
+        $products = Product::with(['images', 'category'])->orderBy('created_at', 'desc')->get();
         return response()->json($products, 200);
     }
 

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('order_id');
             $table->string('payment_type');
             $table->string('transaction_id')->unique();
-            $table->string('status');
+            $table->enum('status', ['settlement', 'pending', 'cancel', 'expired', 'deny']);
             $table->integer('amount');
             $table->json('metadata')->nullable();
             $table->timestamps();

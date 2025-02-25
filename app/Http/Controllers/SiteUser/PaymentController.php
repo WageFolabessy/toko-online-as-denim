@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\SiteUser;
 
-use App\Models\Shipment;
 use Illuminate\Http\Request;
-use Midtrans\Config;
-use Midtrans\Snap;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\Shipment;
 use App\Models\ShoppingCartItem;
+use Midtrans\Config;
+use Midtrans\Snap;
 use Midtrans\Notification;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 class PaymentController extends Controller
@@ -46,7 +46,7 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Metode pengiriman tidak dipilih.'], 400);
         }
 
-        DB::beginTransaction(); // Mulai transaksi database
+        DB::beginTransaction();
 
         try {
             $totalAmount = 0;
@@ -99,34 +99,34 @@ class PaymentController extends Controller
 
             $orderNumber = 'ORDER-' . time() . '-' . $user->id;
 
-            // Buat pesanan
+            // Buat pesanan dengan status pending
             $order = Order::create([
-                'site_user_id' => $user->id,
-                'address_id' => $addressId,
-                'order_number' => $orderNumber,
-                'total_amount' => $totalAmount,
-                'shipping_cost' => $shippingCost,
-                'status' => 'pending',
+                'site_user_id'   => $user->id,
+                'address_id'     => $addressId,
+                'order_number'   => $orderNumber,
+                'total_amount'   => $totalAmount,
+                'shipping_cost'  => $shippingCost,
+                'status'         => 'pending',
             ]);
 
             // Simpan item pesanan
             foreach ($orderItems as $orderItem) {
                 OrderItem::create([
-                    'order_id' => $order->id,
+                    'order_id'   => $order->id,
                     'product_id' => $orderItem['product_id'],
-                    'qty' => $orderItem['qty'],
-                    'price' => $orderItem['price'],
+                    'qty'        => $orderItem['qty'],
+                    'price'      => $orderItem['price'],
                 ]);
             }
 
             // Simpan pengiriman
             Shipment::create([
-                'order_id' => $order->id,
-                'courier' => $shippingOption['code'],
-                'service' => $shippingOption['service'],
+                'order_id'        => $order->id,
+                'courier'         => $shippingOption['code'],
+                'service'         => $shippingOption['service'],
                 'tracking_number' => null,
-                'shipping_cost' => $shippingCost,
-                'status' => 'pending',
+                'shipping_cost'   => $shippingCost,
+                'status'          => 'pending',
             ]);
 
             // Hapus item keranjang belanja pengguna
@@ -134,28 +134,28 @@ class PaymentController extends Controller
                 $query->where('site_user_id', $user->id);
             })->delete();
 
-            DB::commit(); // Komit transaksi database
+            DB::commit();
 
             // Ambil token pembayaran dari Midtrans
             $params = [
                 'transaction_details' => [
-                    'order_id' => $orderNumber,
+                    'order_id'     => $orderNumber,
                     'gross_amount' => $totalAmount,
                 ],
                 'customer_details' => [
                     'first_name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone_number,
+                    'email'      => $user->email,
+                    'phone'      => $user->phone_number,
                 ],
                 'item_details' => $itemDetails,
+                'finish_url' => 'http://localhost:5173/payment-success',
             ];
 
             $snapToken = Snap::getSnapToken($params);
 
             return response()->json(['snapToken' => $snapToken]);
         } catch (\Exception $e) {
-            DB::rollBack(); // Rollback transaksi jika terjadi error
-
+            DB::rollBack();
             $statusCode = $e->getCode() ?: 500;
             return response()->json(['error' => $e->getMessage()], $statusCode);
         }
@@ -174,7 +174,13 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Pesanan tidak ditemukan.'], 404);
         }
 
+        // Ambil status dari notifikasi
         $transactionStatus = $notification->transaction_status;
+        // Konversi status "expire" menjadi "expired" agar sesuai dengan enum
+        if ($transactionStatus === 'expire') {
+            $transactionStatus = 'expired';
+        }
+
         $paymentType = $notification->payment_type;
         $fraudStatus = $notification->fraud_status;
         $transactionId = $notification->transaction_id;
@@ -195,8 +201,8 @@ class PaymentController extends Controller
             $order->status = 'paid';
         } else if ($transactionStatus == 'pending') {
             $order->status = 'pending';
-        } else if ($transactionStatus == 'deny' || $transactionStatus == 'expire' || $transactionStatus == 'cancel') {
-            $order->status = 'failed';
+        } else if (in_array($transactionStatus, ['deny', 'expired', 'cancel'])) {
+            $order->status = 'cancelled';
         }
 
         $order->save();
@@ -205,16 +211,16 @@ class PaymentController extends Controller
         Payment::updateOrCreate(
             ['transaction_id' => $transactionId],
             [
-                'order_id' => $order->id,
+                'order_id'     => $order->id,
                 'payment_type' => $paymentType,
-                'status' => $transactionStatus,
-                'amount' => $grossAmount,
-                'metadata' => json_encode($notification),
+                'status'       => $transactionStatus,
+                'amount'       => $grossAmount,
+                'metadata'     => json_encode($notification),
             ]
         );
 
-        // Jika pembayaran gagal dan status sebelumnya bukan 'failed', kembalikan stok
-        if ($order->status == 'failed' && $previousStatus != 'failed') {
+        // Jika order dibatalkan (status 'cancelled') dan sebelumnya tidak cancelled, kembalikan stok
+        if ($order->status == 'cancelled' && $previousStatus != 'cancelled') {
             foreach ($order->orderItems as $orderItem) {
                 $product = Product::find($orderItem->product_id);
                 if ($product) {

@@ -40,4 +40,3 @@ class Order extends Model
         return $this->hasOne(Shipment::class);
     }
 }
-

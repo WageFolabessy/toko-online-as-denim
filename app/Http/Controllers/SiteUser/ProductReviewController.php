@@ -36,13 +36,11 @@ class ProductReviewController extends Controller
         // Validasi input review
         $data = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
-            'review' => 'required|string',
+            'review' => 'nullable|string',
         ], [
-            'rating.required' => 'Rating harus diisi.',
             'rating.integer'  => 'Rating harus berupa angka.',
             'rating.min'      => 'Rating minimal 1.',
             'rating.max'      => 'Rating maksimal 5.',
-            'review.required' => 'Review harus diisi.',
         ]);
 
         // Pastikan produk ada
@@ -93,7 +91,7 @@ class ProductReviewController extends Controller
     {
         $data = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
-            'review' => 'required|string',
+            'review' => 'nullable|string',
         ], [
             'rating.required' => 'Rating harus diisi.',
         ]);

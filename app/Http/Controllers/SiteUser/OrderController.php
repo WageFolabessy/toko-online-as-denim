@@ -26,7 +26,7 @@ class OrderController extends Controller
         $user = $request->user();
 
         // Mengambil pesanan dengan relasi, milik pengguna saat ini
-        $order = Order::with(['orderItems.product', 'address'])
+        $order = Order::with(['orderItems.product', 'address', 'shipment'])
             ->where('id', $id)
             ->where('site_user_id', $user->id)
             ->first();

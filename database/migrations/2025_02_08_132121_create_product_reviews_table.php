@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('site_user_id');
             $table->unsignedBigInteger('product_id');
             $table->integer('rating');
-            $table->text('review');
+            $table->text(column: 'review')->nullable();
             $table->timestamps();
         
             $table->foreign('site_user_id')->references('id')->on('site_users')->onDelete('cascade');

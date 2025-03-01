@@ -98,7 +98,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Report
     Route::get('/admin/reports', [ReportController::class, 'index']);
-
 });
 
 // SITE USER
@@ -136,7 +135,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Shipping Cost
     Route::post('/calculate-shipping-cost', [SiteUserShipmentController::class, 'calculateShippingCost']);
-
 });
 
 Route::post('/midtrans/notification', [SiteUserPaymentController::class, 'handleNotification']);

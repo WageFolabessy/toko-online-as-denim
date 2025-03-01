@@ -15,6 +15,7 @@ class OrderController extends Controller
         // Mengambil pesanan milik pengguna saat ini
         $orders = Order::with(['orderItems.product', 'address'])
             ->where('site_user_id', $user->id)
+            ->where('status', 'paid')
             ->orderBy('created_at', 'desc')
             ->get();
 

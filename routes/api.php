@@ -13,7 +13,7 @@ use App\Http\Controllers\AdminUser\OrderController as AdminUserOrderController;
 use App\Http\Controllers\AdminUser\PaymentController as AdminUserPaymentController;
 use App\Http\Controllers\AdminUser\ShipmentController as AdminUserShipmentController;
 use App\Http\Controllers\AdminUser\ProductReviewController as AdminUserProductReviewController;
-
+use App\Http\Controllers\AdminUser\ReportController;
 // SITE USER CONTROLLER
 use App\Http\Controllers\SiteUser\AuthController;
 use App\Http\Controllers\SiteUser\AddressController;
@@ -95,6 +95,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Proudct Review
     Route::get('/admin/reviews', [AdminUserProductReviewController::class, 'index']);
     Route::get('/admin/reviews/{id}', [AdminUserProductReviewController::class, 'show']);
+
+    // Report
+    Route::get('/admin/reports', [ReportController::class, 'index']);
 
 });
 

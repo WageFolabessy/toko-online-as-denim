@@ -17,8 +17,9 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'category_name' => $this->faker->word,
-            'parent_category_id' => null, // Bisa di-update untuk self-referencing
+            'category_name' => '',
+            'image' => '',
+            'slug' => '',
         ];
     }
 }

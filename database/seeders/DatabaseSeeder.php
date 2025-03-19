@@ -21,17 +21,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         AdminUser::factory()->create();
-
-        // SiteUser::factory(5)->create();
-        // Address::factory(5)->create();
-        // SiteUserAddress::factory(5)->create();
-        // Category::factory(5)->create();
-        // Product::factory(5)->create();
-        // ProductImage::factory(5)->create();
-        // ShoppingCart::factory(5)->create();
-        // ShoppingCartItem::factory(5)->create();
+        $this->call(CategorySeeder::class);
+        $this->call(ProductSeeder::class);
     }
 }

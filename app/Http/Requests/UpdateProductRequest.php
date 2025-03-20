@@ -19,8 +19,8 @@ class UpdateProductRequest extends FormRequest
             'description'    => 'nullable|string',
         ];
 
-        if ($this->hasFile('images')) {
-            $rules['images.*'] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048';
+        if ($this->hasFile('images.*')) {
+            $rules['images.*'] = 'nullable|image|mimes:jpeg,jpg,png|max:2048';
         }
 
         if ($this->has('imagesToDelete')) {
@@ -47,6 +47,7 @@ class UpdateProductRequest extends FormRequest
             'stock.min'          => 'Stok tidak boleh kurang dari 0.',
             'weight.required'         => 'Berat produk wajib diisi.',
             'weight.min'         => 'Berat tidak boleh kurang dari 0.',
+            'images.*.mimes'          => 'Format gambar harus jpeg, png, atau jpg',
         ];
     }
 }

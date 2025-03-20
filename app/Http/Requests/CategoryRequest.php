@@ -16,7 +16,7 @@ class CategoryRequest extends FormRequest
             'image' => [
                 $this->isMethod('post') ? 'required' : 'nullable',
                 'image',
-                'mimes:jpeg,png,jpg,gif,svg',
+                'mimes:jpeg,jpg,png',
                 'max:2048',
             ],
         ];
@@ -30,6 +30,7 @@ class CategoryRequest extends FormRequest
             'image.required'         => 'Gambar kategori wajib isi.',
             'image.image'            => 'File yang diunggah harus berupa gambar.',
             'image.max'              => 'Ukuran gambar terlalu besar. Maksimal 2MB.',
+            'image.mimes'              => 'Format gambar harus jpeg, png, atau webp.',
         ];
     }
 }

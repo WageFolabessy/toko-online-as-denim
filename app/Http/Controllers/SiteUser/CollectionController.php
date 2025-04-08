@@ -17,7 +17,10 @@ class CollectionController extends Controller
 
     public function getAllProducts()
     {
-        $products = Product::with(['images', 'category'])->orderBy('updated_at', 'desc')->get();
+        $products = Product::with(['images', 'category'])
+            ->orderByRaw("CASE WHEN stock = 0 THEN 1 ELSE 0 END, updated_at DESC")
+            ->get();
+
         return response()->json($products, 200);
     }
 

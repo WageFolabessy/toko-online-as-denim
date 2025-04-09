@@ -29,31 +29,4 @@ class PaymentController extends Controller
             'payment' => $payment,
         ], 200);
     }
-
-    public function updateStatus(Request $request, $id)
-    {
-        $data = $request->validate([
-            'status' => 'required|string|in:settlement,pending,cancel,expired,deny',
-        ], [
-            'status.required' => 'Status pembayaran harus diisi.',
-            'status.in'       => 'Status pembayaran tidak valid.',
-        ]);
-
-        $payment = Payment::find($id);
-        if (!$payment) {
-            return response()->json([
-                'message' => 'Pembayaran tidak ditemukan.'
-            ], 404);
-        }
-
-        // Update status pembayaran
-        $payment->update([
-            'status' => $data['status']
-        ]);
-
-        return response()->json([
-            'message' => 'Status pembayaran berhasil diperbarui.',
-            'payment' => $payment,
-        ], 200);
-    }
 }

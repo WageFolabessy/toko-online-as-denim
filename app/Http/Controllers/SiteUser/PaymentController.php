@@ -176,7 +176,8 @@ class PaymentController extends Controller
 
         // Ambil status dari notifikasi
         $transactionStatus = $notification->transaction_status;
-        // Konversi status "expire" menjadi "expired" agar sesuai dengan enum
+
+        // Jika diperlukan, lakukan penyesuaian status. Contoh: jika status "expire" ingin diubah menjadi "expired"
         if ($transactionStatus === 'expire') {
             $transactionStatus = 'expired';
         }
@@ -207,7 +208,7 @@ class PaymentController extends Controller
 
         $order->save();
 
-        // Simpan data pembayaran
+        // Simpan data pembayaran lengkap dengan metadata notifikasi
         Payment::updateOrCreate(
             ['transaction_id' => $transactionId],
             [
@@ -215,7 +216,7 @@ class PaymentController extends Controller
                 'payment_type' => $paymentType,
                 'status'       => $transactionStatus,
                 'amount'       => $grossAmount,
-                'metadata'     => json_encode($notification),
+                'metadata'     => $request->all(),
             ]
         );
 

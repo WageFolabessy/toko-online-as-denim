@@ -86,7 +86,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payment
     Route::get('/admin/payments', [AdminUserPaymentController::class, 'index']);
     Route::get('/admin/payments/{id}', [AdminUserPaymentController::class, 'show']);
-    Route::put('/admin/payments/{id}', [AdminUserPaymentController::class, 'updateStatus']);
     
     // Shipment
     Route::get('/admin/shipments', [AdminUserShipmentController::class, 'index']);

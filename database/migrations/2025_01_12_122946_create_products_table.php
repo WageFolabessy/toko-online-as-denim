@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('product_name', 50);
             $table->unsignedBigInteger('category_id');
+            $table->string('color', 30)->nullable();
+            $table->string('brand', 50)->nullable();
             $table->integer('original_price');
             $table->integer('sale_price')->nullable();
             $table->string('size', 80);

@@ -10,6 +10,8 @@ class UpdateProductRequest extends FormRequest
     {
         $rules = [
             'product_name'   => 'required|string|max:50',
+            'color'   => 'nullable|string|max:30',
+            'brand'   => 'nullable|string|max:50',
             'category_id'    => 'required|exists:categories,id',
             'original_price' => 'required|integer|min:1',
             'sale_price'     => 'nullable|integer|min:1',
@@ -31,12 +33,12 @@ class UpdateProductRequest extends FormRequest
         return $rules;
     }
 
-
-
     public function messages()
     {
         return [
             'product_name.required'   => 'Nama produk wajib diisi.',
+            'color.max'   => 'Warna produk tidak boleh lebih dari 30 karakter.',
+            'brand.max'   => 'Brand produk tidak boleh lebih dari 50 karakter.',
             'category_id.required'    => 'Kategori wajib dipilih.',
             'category_id.exists'      => 'Kategori tidak ditemukan.',
             'original_price.required' => 'Harga asli produk wajib diisi.',

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('order_number')->unique();
             $table->integer('total_amount');
             $table->integer('shipping_cost');
-            $table->enum('status', ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
+            $table->enum('status', ['cancelled', 'pending', 'processed'])->default('pending');
             $table->timestamps();
         
             $table->foreign('site_user_id')->references('id')->on('site_users')->onDelete('cascade');

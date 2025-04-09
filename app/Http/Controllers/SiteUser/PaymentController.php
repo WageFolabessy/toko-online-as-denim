@@ -20,20 +20,20 @@ class PaymentController extends Controller
 {
     private function initMidtrans()
     {
-        Config::$serverKey = config('midtrans.server_key');
-        Config::$isProduction = config('midtrans.is_production');
-        Config::$isSanitized = config('midtrans.is_sanitized');
-        Config::$is3ds = config('midtrans.is_3ds');
-        Config::$appendNotifUrl = env('NGROK_HTTP_8000');
+        Config::$serverKey       = config('midtrans.server_key');
+        Config::$isProduction    = config('midtrans.is_production');
+        Config::$isSanitized     = config('midtrans.is_sanitized');
+        Config::$is3ds           = config('midtrans.is_3ds');
+        Config::$appendNotifUrl  = env('NGROK_HTTP_8000');
     }
 
     public function initiatePayment(Request $request)
     {
         $this->initMidtrans();
-        $cartItems = $request->input('cartItems');
-        $addressId = $request->input('address_id');
+        $cartItems      = $request->input('cartItems');
+        $addressId      = $request->input('address_id');
         $shippingOption = $request->input('shipping_option');
-        $user = $request->user();
+        $user           = $request->user();
 
         // Validasi data
         if (!$cartItems || count($cartItems) === 0) {
@@ -49,9 +49,9 @@ class PaymentController extends Controller
         DB::beginTransaction();
 
         try {
-            $totalAmount = 0;
-            $orderItems = [];
-            $itemDetails = [];
+            $totalAmount  = 0;
+            $orderItems   = [];
+            $itemDetails  = [];
 
             foreach ($cartItems as $item) {
                 $product = Product::find($item['product_id']);
@@ -60,30 +60,28 @@ class PaymentController extends Controller
                     throw new \Exception('Produk dengan ID ' . $item['product_id'] . ' tidak ditemukan.', 404);
                 }
 
-                // Periksa ketersediaan stok
                 if ($product->stock < $item['qty']) {
                     throw new \Exception("Stok produk {$product->product_name} tidak mencukupi.", 400);
                 }
 
-                $price = $product->sale_price ?? $product->original_price;
+                $price    = $product->sale_price ?? $product->original_price;
                 $subtotal = $price * $item['qty'];
                 $totalAmount += $subtotal;
 
                 $orderItems[] = [
                     'product_id' => $product->id,
-                    'qty' => $item['qty'],
-                    'price' => $price,
-                    'subtotal' => $subtotal,
+                    'qty'        => $item['qty'],
+                    'price'      => $price,
+                    'subtotal'   => $subtotal,
                 ];
 
                 $itemDetails[] = [
-                    'id' => (string)$product->id,
-                    'price' => $price,
+                    'id'       => (string)$product->id,
+                    'price'    => $price,
                     'quantity' => $item['qty'],
-                    'name' => substr($product->product_name, 0, 50),
+                    'name'     => substr($product->product_name, 0, 50),
                 ];
 
-                // Kurangi stok produk
                 $product->decrement('stock', $item['qty']);
             }
 
@@ -91,25 +89,23 @@ class PaymentController extends Controller
             $totalAmount += $shippingCost;
 
             $itemDetails[] = [
-                'id' => 'SHIPPING',
-                'price' => $shippingCost,
+                'id'       => 'SHIPPING',
+                'price'    => $shippingCost,
                 'quantity' => 1,
-                'name' => 'Ongkos Kirim',
+                'name'     => 'Ongkos Kirim',
             ];
 
             $orderNumber = 'ORDER-' . time() . '-' . $user->id;
 
-            // Buat pesanan dengan status pending
             $order = Order::create([
-                'site_user_id'   => $user->id,
-                'address_id'     => $addressId,
-                'order_number'   => $orderNumber,
-                'total_amount'   => $totalAmount,
-                'shipping_cost'  => $shippingCost,
-                'status'         => 'pending',
+                'site_user_id'  => $user->id,
+                'address_id'    => $addressId,
+                'order_number'  => $orderNumber,
+                'total_amount'  => $totalAmount,
+                'shipping_cost' => $shippingCost,
+                'status'        => 'pending',
             ]);
 
-            // Simpan item pesanan
             foreach ($orderItems as $orderItem) {
                 OrderItem::create([
                     'order_id'   => $order->id,
@@ -119,7 +115,6 @@ class PaymentController extends Controller
                 ]);
             }
 
-            // Simpan pengiriman
             Shipment::create([
                 'order_id'        => $order->id,
                 'courier'         => $shippingOption['code'],
@@ -136,7 +131,6 @@ class PaymentController extends Controller
 
             DB::commit();
 
-            // Ambil token pembayaran dari Midtrans
             $params = [
                 'transaction_details' => [
                     'order_id'     => $orderNumber,
@@ -148,7 +142,7 @@ class PaymentController extends Controller
                     'phone'      => $user->phone_number,
                 ],
                 'item_details' => $itemDetails,
-                'finish_url' => 'http://localhost:5173/payment-success',
+                'finish_url'   => 'http://localhost:5173/payment-success',
             ];
 
             $snapToken = Snap::getSnapToken($params);
@@ -174,32 +168,29 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Pesanan tidak ditemukan.'], 404);
         }
 
-        // Ambil status dari notifikasi
         $transactionStatus = $notification->transaction_status;
 
-        // Jika diperlukan, lakukan penyesuaian status. Contoh: jika status "expire" ingin diubah menjadi "expired"
         if ($transactionStatus === 'expire') {
             $transactionStatus = 'expired';
         }
 
-        $paymentType = $notification->payment_type;
-        $fraudStatus = $notification->fraud_status;
+        $paymentType   = $notification->payment_type;
+        $fraudStatus   = $notification->fraud_status;
         $transactionId = $notification->transaction_id;
-        $grossAmount = $notification->gross_amount;
+        $grossAmount   = $notification->gross_amount;
 
-        // Simpan status sebelumnya
         $previousStatus = $order->status;
 
         if ($transactionStatus == 'capture') {
             if ($fraudStatus == 'accept') {
-                $order->status = 'paid';
+                $order->status = 'pending';
             } else if ($fraudStatus == 'challenge') {
                 $order->status = 'pending';
             } else {
-                $order->status = 'fraud';
+                $order->status = 'cancelled';
             }
         } else if ($transactionStatus == 'settlement') {
-            $order->status = 'paid';
+            $order->status = 'pending';
         } else if ($transactionStatus == 'pending') {
             $order->status = 'pending';
         } else if (in_array($transactionStatus, ['deny', 'expired', 'cancel'])) {
@@ -208,7 +199,6 @@ class PaymentController extends Controller
 
         $order->save();
 
-        // Simpan data pembayaran lengkap dengan metadata notifikasi
         Payment::updateOrCreate(
             ['transaction_id' => $transactionId],
             [
@@ -220,8 +210,7 @@ class PaymentController extends Controller
             ]
         );
 
-        // Jika order dibatalkan (status 'cancelled') dan sebelumnya tidak cancelled, kembalikan stok
-        if ($order->status == 'cancelled' && $previousStatus != 'cancelled') {
+        if ($order->status == 'cancelled' && $previousStatus !== 'cancelled') {
             foreach ($order->orderItems as $orderItem) {
                 $product = Product::find($orderItem->product_id);
                 if ($product) {

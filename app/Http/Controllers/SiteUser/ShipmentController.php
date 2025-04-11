@@ -6,48 +6,81 @@ use App\Http\Requests\CalculateShippingCostRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Client\RequestException;
 
 class ShipmentController extends Controller
 {
     public function calculateShippingCost(CalculateShippingCostRequest $request)
     {
+        $apiKey = env('RAJA_ONGKIR_API_KEY');
+        $originPostalCode = env('POSTAL_CODE_ORIGIN');
+        $apiUrl = 'https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost';
+
+        if (empty($apiKey) || empty($originPostalCode)) {
+            Log::error('Konfigurasi RajaOngkir (API Key / Origin Postal Code) tidak ditemukan / kosong di .env.');
+            return response()->json(['message' => 'Konfigurasi server pengiriman tidak lengkap.'], 500);
+        }
+
         try {
-            // Validasi input dari body permintaan
             $validatedData = $request->validated();
 
-            // Tambahkan 'origin' dari env atau konfigurasi Anda
-            $validatedData['origin'] = env('POSTAL_CODE_ORIGIN');
+            $payload = [
+                'origin'      => $originPostalCode,
+                'destination' => $validatedData['destination'],
+                'weight'      => $validatedData['weight'],
+                'courier'     => $validatedData['courier'],
+            ];
 
-            // $apiKey = env('RAJA_ONGKIR_API_KEY');
-            $apiKey = env('RAJA_ONGKIR_API_KEY_FOLABESSY26');
+            if (isset($validatedData['price']) && $validatedData['price']) {
+                $payload['price'] = $validatedData['price'];
+            }
 
-            // Mengirim permintaan POST dengan query parameters
+            Log::info('Menghitung ongkos kirim (POST with Query Params):', [
+                'url' => $apiUrl,
+                'payload_as_query' => $payload
+            ]);
+
             $response = Http::withHeaders([
                 'key' => $apiKey,
                 'Accept' => 'application/json',
             ])
                 ->withOptions([
-                    'query' => $validatedData,
+                    'query' => $payload,
                 ])
-                ->post('https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost');
+                ->post($apiUrl);
 
-            // Log data yang dikirim
-            Log::info('Data dikirim ke RajaOngkir:', $validatedData);
-
-            if ($response->successful() && isset($response->json()['data'])) {
-                return response()->json($response->json()['data'], 200);
+            if ($response->successful()) {
+                $responseData = $response->json();
+                if (isset($responseData['data']) && is_array($responseData['data'])) {
+                    return response()->json($responseData['data'], 200);
+                } else {
+                    Log::warning('Struktur respons sukses API Ongkir tidak memiliki key "data" array:', ['body' => $responseData]);
+                    return response()->json([], 200);
+                }
             } else {
+                Log::error('API Ongkir Error (POST with Query Params):', [
+                    'status' => $response->status(),
+                    'body' => $response->json() ?? $response->body()
+                ]);
+                $errorMessage = $response->json()['meta']['message'] ??
+                    ($response->json()['message'] ??
+                        'Gagal menghitung ongkos kirim dari layanan eksternal.');
+
+                if ($response->status() === 400 && str_contains(strtolower($response->body()), 'origin') && str_contains(strtolower($response->body()), 'destination')) {
+                    $errorMessage = 'Origin atau Destination (Kode Pos) tidak valid atau tidak ditemukan oleh layanan pengiriman.';
+                }
+
                 return response()->json([
-                    'message' => 'Gagal menghitung ongkos kirim.',
-                    'error'   => $response->json()['meta']['message'] ?? 'Unknown error',
+                    'message' => $errorMessage,
                 ], $response->status());
             }
+        } catch (RequestException $e) {
+            Log::error('HTTP Request Exception ongkir:', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Tidak dapat terhubung ke layanan pengiriman.'], 503);
         } catch (\Exception $e) {
-            Log::error('Error menghitung ongkos kirim:', ['error' => $e->getMessage()]);
-
+            Log::error('Error umum ongkir:', ['error' => $e->getMessage()]);
             return response()->json([
-                'message' => 'Terjadi kesalahan saat menghitung ongkos kirim.',
-                'error'   => $e->getMessage(),
+                'message' => 'Terjadi kesalahan internal saat menghitung ongkos kirim.',
             ], 500);
         }
     }

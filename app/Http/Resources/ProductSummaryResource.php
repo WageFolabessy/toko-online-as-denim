@@ -23,6 +23,7 @@ class ProductSummaryResource extends JsonResource
              'slug' => $this->slug,
              'stock' => $this->stock,
              'size' => $this->size,
+             'weight' => $this->weight,
              'original_price' => $this->original_price,
              'sale_price' => $this->sale_price,
              'effective_price' => $this->sale_price ?? $this->original_price,

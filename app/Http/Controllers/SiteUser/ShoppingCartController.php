@@ -22,7 +22,7 @@ class ShoppingCartController extends Controller
         $cartItems = ShoppingCartItem::where('shopping_cart_id', $cart->id)
             ->with([
                 'product' => function ($query) {
-                    $query->select('id', 'product_name', 'slug', 'size', 'stock', 'original_price', 'sale_price');
+                    $query->select('id', 'product_name', 'slug', 'size', 'stock', 'weight', 'original_price', 'sale_price');
                 },
                 'product.images' => function ($query) {
                     $query->where('is_primary', true)->select('id', 'product_id', 'image', 'is_primary');

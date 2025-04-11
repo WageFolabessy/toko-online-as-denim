@@ -9,41 +9,80 @@ use Illuminate\Support\Str;
 class Product extends Model
 {
     use HasFactory;
-    
-    protected $fillable = ['product_name', 'category_id', 'color', 'brand', 'original_price', 'sale_price', 'size', 'stock', 'weight', 'description'];
+
+    protected $fillable = [
+        'product_name',
+        'category_id',
+        'color',
+        'brand',
+        'original_price',
+        'sale_price',
+        'size',
+        'stock',
+        'weight',
+        'description'
+    ];
+
+    protected $casts = [
+        'original_price' => 'integer',
+        'sale_price' => 'integer',
+        'stock' => 'integer',
+        'weight' => 'integer',
+    ];
+
 
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
 
-    // Relasi ke Gambar Produk
     public function images()
     {
         return $this->hasMany(ProductImage::class, 'product_id');
     }
+
+    public function primaryImage()
+    {
+        return $this->hasOne(ProductImage::class, 'product_id')->where('is_primary', true);
+    }
+
 
     public static function boot()
     {
         parent::boot();
 
         static::creating(function ($product) {
-            $product->slug = self::generateSlug($product->product_name);
+            if (empty($product->slug)) {
+                $product->slug = self::generateUniqueSlug($product->product_name);
+            }
         });
 
         static::updating(function ($product) {
-            if ($product->isDirty('product_name')) {
-                $product->slug = self::generateSlug($product->product_name);
+            if ($product->isDirty('product_name') && !$product->isDirty('slug')) {
+                $product->slug = self::generateUniqueSlug($product->product_name, $product->id);
             }
         });
     }
 
-    private static function generateSlug($name)
+    private static function generateUniqueSlug(string $name, ?int $ignoreId = null): string
     {
         $slug = Str::slug($name);
+        $originalSlug = $slug;
+        $count = 1;
 
-        $count = Product::whereRaw("slug RLIKE '^{$slug}(.[0-9]+)?$'")->count();
+        $query = Product::where('slug', $slug);
+        if ($ignoreId !== null) {
+            $query->where('id', '!=', $ignoreId);
+        }
 
-        return $count ? "{$slug}-{$count}" : $slug;
+        while ($query->exists()) {
+            $slug = $originalSlug . '-' . $count++;
+            $query = Product::where('slug', $slug);
+            if ($ignoreId !== null) {
+                $query->where('id', '!=', $ignoreId);
+            }
+        }
+
+        return $slug;
     }
 }

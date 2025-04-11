@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SiteUser;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\UpdateSiteUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\SiteUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,40 +17,33 @@ class AuthController extends Controller
     {
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
-
         $user = SiteUser::create($data);
-
 
         return response()->json([
             'message' => 'Registrasi berhasil.',
-            'user'    => $user->makeHidden(['password', 'remember_token']),
+            'user' => new UserResource($user),
         ], 201);
     }
 
     public function login(LoginRequest $request)
     {
         $credentials = $request->validated();
-
         $user = SiteUser::where('email', $credentials['email'])->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            return response()->json([
-                'message' => 'Email atau password salah.',
-            ], 401);
+            return response()->json(['message' => 'Email atau password salah.'], 401);
         }
 
         if (!$user->is_active) {
-            return response()->json([
-                'message' => 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.',
-            ], 403);
+            return response()->json(['message' => 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.'], 403); // Forbidden
         }
 
-        $token = $user->createToken($user->email)->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken; // Beri nama token yg lebih umum
 
         return response()->json([
             'message' => 'Login berhasil.',
-            'user'    => $user->makeHidden(['password', 'remember_token']),
-            'token'   => $token,
+            'user' => new UserResource($user),
+            'token' => $token,
         ], 200);
     }
 
@@ -57,16 +51,12 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'message' => 'Logout berhasil.',
-        ], 200);
+        return response()->json(['message' => 'Logout berhasil.'], 200);
     }
 
     public function getUser(Request $request)
     {
-        $user = $request->user()->makeHidden(['password', 'remember_token']);
-
-        return response()->json($user, 200);
+        return new UserResource($request->user());
     }
 
     public function updateUser(UpdateSiteUserRequest $request)
@@ -84,7 +74,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui.',
-            'user'    => $user->makeHidden(['password', 'remember_token']),
+            'user' => new UserResource($user->fresh()),
         ], 200);
     }
 }

@@ -18,7 +18,8 @@ class SiteUser extends Authenticatable implements CanResetPasswordContract
         'name',
         'email',
         'password',
-        'is_active'
+        'is_active',
+        'phone_number'
     ];
 
     protected $hidden = [
@@ -31,6 +32,7 @@ class SiteUser extends Authenticatable implements CanResetPasswordContract
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean'
         ];
     }
 

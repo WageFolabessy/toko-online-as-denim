@@ -54,9 +54,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'logout']);
 
     // SiteUserDetailController
-    Route::put('/admin/site_user', [SiteUserDetailController::class, 'index']);
-    Route::get('/admin/site_user/{id}', [SiteUserDetailController::class, 'show']);
-    Route::put('/admin/update_siteuser_status/{id}', [SiteUserDetailController::class, 'updateStatus']);
+    Route::get('/admin/site_user', [SiteUserDetailController::class, 'index']);
+    Route::get('/admin/site_user/{siteUser}', [SiteUserDetailController::class, 'show']);
+    Route::put('/admin/update_siteuser_status/{siteUser}', [SiteUserDetailController::class, 'updateStatus']);
 
     // Dashboard
     Route::get('/admin/dashboard/summary', [DashboardController::class, 'summary']);

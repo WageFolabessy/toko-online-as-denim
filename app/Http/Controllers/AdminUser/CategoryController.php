@@ -2,105 +2,156 @@
 
 namespace App\Http\Controllers\AdminUser;
 
-use App\Http\Requests\CategoryRequest;
-use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Requests\AdminUser\CategoryRequest;
+use App\Http\Requests\AdminUser\UpdateCategoryRequest;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AdminUser\CategoryResource;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
         $categories = Category::orderBy('created_at', 'desc')->get();
-        return response()->json($categories, 200);
+        return CategoryResource::collection($categories);
     }
 
-    public function store(CategoryRequest $request)
+    public function store(CategoryRequest $request): JsonResponse
     {
-        try {
-            $data = $request->validated();
+        $data = $request->validated();
+        $imagePath = null;
 
-            // Menyimpan gambar kategori
+        try {
+            DB::beginTransaction(); 
+
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('categories', 'public');
+                $imagePath = $request->file('image')->store('categories', 'public');
+                if (!$imagePath) {
+                    throw new \Exception("Gagal menyimpan file gambar.");
+                }
+                $data['image'] = $imagePath;
             }
 
             $category = Category::create($data);
 
+            DB::commit();
+            return (new CategoryResource($category))
+                ->additional(['message' => 'Kategori berhasil ditambahkan.'])
+                ->response()
+                ->setStatusCode(201);
+        } catch (\Throwable $e) {
+            DB::rollBack(); 
+
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
+
+            Log::error('Error creating category: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+
             return response()->json([
-                'category' => $category,
-                'message'  => 'Kategori berhasil ditambahkan.'
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message'  => 'Terjadi kesalahan saat menambahkan kategori.',
-                'error'    => $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menambahkan kategori.',
             ], 500);
         }
     }
 
-    public function show($id)
+    public function show(Category $category): CategoryResource
     {
-        // Menggunakan route model binding jika memungkinkan
-        $category = Category::find($id);
-
-        if (!$category) {
-            return response()->json([
-                'message' => 'Kategori tidak ditemukan.',
-            ], 404);
-        }
-
-        return response()->json($category, 200);
+        return new CategoryResource($category);
     }
 
-    public function update(UpdateCategoryRequest $request, $id)
+    public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
-        $category = Category::find($id);
-
-        if (!$category) {
-            return response()->json([
-                'message' => 'Kategori tidak ditemukan.',
-            ], 404);
-        }
-
         $data = $request->validated();
+        $oldImagePath = $category->image;
+        $newImagePath = null;
 
-        // Menghapus gambar lama jika ada gambar baru
-        if ($request->hasFile('image')) {
-            if (Storage::disk('public')->exists($category->image)) {
-                Storage::disk('public')->delete($category->image);
+        try {
+            DB::beginTransaction();
+
+            if ($request->hasFile('image')) {
+                $newImagePath = $request->file('image')->store('categories', 'public');
+                if (!$newImagePath) {
+                    throw new \Exception("Gagal menyimpan file gambar baru.");
+                }
+                $data['image'] = $newImagePath;
             }
-            $data['image'] = $request->file('image')->store('categories', 'public');
+
+            $category->update($data);
+
+            if ($newImagePath && $oldImagePath && Storage::disk('public')->exists($oldImagePath)) {
+                try {
+                    Storage::disk('public')->delete($oldImagePath);
+                } catch (\Exception $fileDeleteError) {
+                    Log::warning('Gagal menghapus file gambar lama: ' . $oldImagePath . ' Error: ' . $fileDeleteError->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            // Return resource dengan pesan sukses
+            return (new CategoryResource($category->fresh())) // Ambil data terbaru
+                ->additional(['message' => 'Kategori berhasil diperbarui.'])
+                ->response()
+                ->setStatusCode(200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            // Hapus file baru yang mungkin sudah terupload jika update DB gagal
+            if ($newImagePath && Storage::disk('public')->exists($newImagePath)) {
+                Storage::disk('public')->delete($newImagePath);
+            }
+
+            Log::error('Error updating category: ' . $e->getMessage(), [
+                'category_id' => $category->id,
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat memperbarui kategori.',
+            ], 500);
         }
-
-        $category->update($data);
-
-        return response()->json([
-            'category' => $category,
-            'message'  => 'Kategori berhasil diperbarui.',
-        ], 200);
     }
 
-    public function destroy($id)
+    public function destroy(Category $category): JsonResponse
     {
-        $category = Category::find($id);
+        $imagePath = $category->image;
 
-        if (!$category) {
+        try {
+            DB::beginTransaction();
+
+            $category->delete();
+
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                try {
+                    Storage::disk('public')->delete($imagePath);
+                } catch (\Exception $fileDeleteError) {
+                    Log::warning('Gagal menghapus file gambar kategori: ' . $imagePath . ' Error: ' . $fileDeleteError->getMessage());
+                }
+            }
+
+            DB::commit();
+
             return response()->json([
-                'message' => 'Kategori tidak ditemukan.',
-            ], 404);
+                'message' => 'Kategori berhasil dihapus.'
+            ], 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error('Error deleting category: ' . $e->getMessage(), [
+                'category_id' => $category->id,
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menghapus kategori.',
+            ], 500);
         }
-
-        // Menghapus gambar kategori
-        if (Storage::disk('public')->exists($category->image)) {
-            Storage::disk('public')->delete($category->image);
-        }
-
-        $category->delete();
-
-        return response()->json([
-            'message' => 'Kategori berhasil dihapus.',
-        ], 200);
     }
 }

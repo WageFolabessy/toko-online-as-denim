@@ -9,21 +9,18 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ReportController extends Controller
 {
     public function index(Request $request): JsonResponse|AnonymousResourceCollection
     {
-        // Definisikan status order yang valid untuk filter (sesuaikan jika perlu)
         $validOrderStatuses = ['pending', 'processed', 'shipped', 'delivered', 'awaiting_payment', 'cancelled'];
 
-        // Validasi input filter & pagination
         $validated = $request->validate([
             'start_date' => 'nullable|date_format:Y-m-d',
             'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
-            'status' => ['nullable', 'string', Rule::in($validOrderStatuses)], // Validasi status
+            'status' => ['nullable', 'string', Rule::in($validOrderStatuses)],
             'search' => 'nullable|string|max:100',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:5|max:100',
@@ -43,7 +40,7 @@ class ReportController extends Controller
                 'payment:order_id,status',
                 'shipment:order_id,status'
             ])
-            ->whereIn('status', ['pending', 'processed', 'shipped', 'delivered']) // Status order yg dianggap 'sales'
+            ->whereIn('status', ['pending', 'processed', 'shipped', 'delivered'])
             ->whereBetween('created_at', [$startDate, $endDateInclusive]);
 
 
@@ -52,7 +49,7 @@ class ReportController extends Controller
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('order_number', 'like', "%{$searchTerm}%")
                     ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$searchTerm}%")->orWhere('email', 'like', "%{$searchTerm}%"))
-                    ->orWhereHas('shipment', fn($sq) => $sq->where('tracking_number', 'like', "%{$searchTerm}%")); // Contoh search resi
+                    ->orWhereHas('shipment', fn($sq) => $sq->where('tracking_number', 'like', "%{$searchTerm}%"));
             });
         }
 
@@ -60,12 +57,10 @@ class ReportController extends Controller
             $query->where('status', $validated['status']);
         }
 
-        // Hitung Agregat (berdasarkan filter, sebelum pagination)
         $aggregateQuery = clone $query;
         $reportSummary = $aggregateQuery->selectRaw('COUNT(*) as total_orders, SUM(total_amount) as total_sales')
             ->first();
 
-        // Pagination
         $perPage = $validated['per_page'] ?? 15;
         $orders = $query->orderBy('created_at', 'desc')
             ->paginate($perPage)

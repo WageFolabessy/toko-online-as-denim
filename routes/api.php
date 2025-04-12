@@ -80,8 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Order
     Route::get('/admin/orders', [AdminUserOrderController::class, 'index']);
-    Route::get('/admin/orders/{id}', [AdminUserOrderController::class, 'show']);
-    Route::put('/admin/orders/{id}', [AdminUserOrderController::class, 'updateStatus']);
+    Route::get('/admin/orders/{order}', [AdminUserOrderController::class, 'show']);
+    Route::put('/admin/orders/{order}', [AdminUserOrderController::class, 'updateStatus']);
     
     // Payment
     Route::get('/admin/payments', [AdminUserPaymentController::class, 'index']);

@@ -89,7 +89,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Shipment
     Route::get('/admin/shipments', [AdminUserShipmentController::class, 'index']);
-    Route::put('/admin/shipments/{id}', [AdminUserShipmentController::class, 'update']);
+    Route::get('/admin/shipments/{shipment}', [AdminUserShipmentController::class, 'show']);
+    Route::put('/admin/shipments/{shipment}', [AdminUserShipmentController::class, 'update']);
 
     // Proudct Review
     Route::get('/admin/reviews', [AdminUserProductReviewController::class, 'index']);

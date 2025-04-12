@@ -94,7 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Proudct Review
     Route::get('/admin/reviews', [AdminUserProductReviewController::class, 'index']);
-    Route::get('/admin/reviews/{id}', [AdminUserProductReviewController::class, 'show']);
+    Route::get('/admin/reviews/{review}', [AdminUserProductReviewController::class, 'show']);
 
     // Report
     Route::get('/admin/reports', [ReportController::class, 'index']);

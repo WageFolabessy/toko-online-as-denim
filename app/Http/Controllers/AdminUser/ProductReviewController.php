@@ -3,35 +3,46 @@
 namespace App\Http\Controllers\AdminUser;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AdminUser\ProductReviewResource;
 use App\Models\Product;
 use App\Models\ProductReview;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ProductReviewController extends Controller
 {
-    public function index()
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $reviews = ProductReview::with('user', 'product')
-            ->latest()
-            ->get();
+        $query = ProductReview::with([
+            'user:id,name,email',
+            'product:id,product_name'
+        ])
+            ->latest();
 
-        return response()->json([
-            'reviews' => $reviews,
-        ], 200);
-    }
-
-    public function show($id)
-    {
-        $review = ProductReview::with('user', 'product')->find($id);
-
-        if (!$review) {
-            return response()->json([
-                'message' => 'Ulasan tidak ditemukan.'
-            ], 404);
+        if ($request->filled('rating')) {
+            $rating = filter_var($request->input('rating'), FILTER_VALIDATE_INT);
+            if ($rating !== false && $rating >= 1 && $rating <= 5) {
+                $query->where('rating', $rating);
+            }
         }
 
-        return response()->json([
-            'review' => $review,
-        ], 200);
+        if ($request->filled('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('review', 'like', "%{$searchTerm}%")
+                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$searchTerm}%"))
+                    ->orWhereHas('product', fn($pq) => $pq->where('product_name', 'like', "%{$searchTerm}%"));
+            });
+        }
+
+        $reviews = $query->paginate($request->input('per_page', 15))->withQueryString();
+        return ProductReviewResource::collection($reviews);
+    }
+
+    public function show(ProductReview $review): ProductReviewResource
+    {
+        $review->loadMissing(['user', 'product']);
+
+        return new ProductReviewResource($review);
     }
 }

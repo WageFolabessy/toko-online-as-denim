@@ -51,9 +51,7 @@ class OrderController extends Controller
         $order->load([
             'user',
             'address',
-            'orderItems.product' => function ($query) {
-                $query->select(['id', 'product_name'])->with(['primaryImage']);
-            },
+            'orderItems.product.primaryImage',
             'payment',
             'shipment'
         ]);

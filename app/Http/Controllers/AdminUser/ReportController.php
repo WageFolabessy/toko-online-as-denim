@@ -3,41 +3,84 @@
 namespace App\Http\Controllers\AdminUser;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AdminUser\OrderResource;
+use App\Models\Order;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ReportController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse|AnonymousResourceCollection
     {
-        $query = DB::table('orders as o')
-            ->join('order_items as oi', 'o.id', '=', 'oi.order_id')
-            ->join('products as p', 'oi.product_id', '=', 'p.id')
-            ->leftJoin('payments as pay', 'o.id', '=', 'pay.order_id')
-            ->leftJoin('shipments as s', 'o.id', '=', 's.order_id')
-            ->select(
-                'o.order_number',
-                'o.created_at',
-                'o.total_amount',
-                'oi.qty',
-                'oi.price',
-                'p.product_name',
-                'pay.status as payment_status',
-                's.tracking_number'
-            )
-            ->whereIn('o.status', ['paid', 'processing', 'shipped', 'delivered']);
+        // Definisikan status order yang valid untuk filter (sesuaikan jika perlu)
+        $validOrderStatuses = ['pending', 'processed', 'shipped', 'delivered', 'awaiting_payment', 'cancelled'];
 
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $startDate = $request->query('start_date');
-            $endDate = $request->query('end_date');
-            $query->whereBetween('o.created_at', [$startDate, $endDate]);
+        // Validasi input filter & pagination
+        $validated = $request->validate([
+            'start_date' => 'nullable|date_format:Y-m-d',
+            'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
+            'status' => ['nullable', 'string', Rule::in($validOrderStatuses)], // Validasi status
+            'search' => 'nullable|string|max:100',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:5|max:100',
+        ], [
+            'end_date.after_or_equal' => 'Tanggal akhir harus sama atau setelah tanggal mulai.',
+            'date_format' => 'Format tanggal harus YYYY-MM-DD.',
+            'status.in' => 'Filter status tidak valid.'
+        ]);
+
+        $startDate = $validated['start_date'] ?? Carbon::now()->startOfMonth()->toDateString();
+        $endDate = $validated['end_date'] ?? Carbon::now()->endOfMonth()->toDateString();
+        $endDateInclusive = Carbon::parse($endDate)->addDay()->toDateString();
+
+        $query = Order::query()
+            ->with([
+                'user:id,name,email',
+                'payment:order_id,status',
+                'shipment:order_id,status'
+            ])
+            ->whereIn('status', ['pending', 'processed', 'shipped', 'delivered']) // Status order yg dianggap 'sales'
+            ->whereBetween('created_at', [$startDate, $endDateInclusive]);
+
+
+        if (!empty($validated['search'])) {
+            $searchTerm = $validated['search'];
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('order_number', 'like', "%{$searchTerm}%")
+                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$searchTerm}%")->orWhere('email', 'like', "%{$searchTerm}%"))
+                    ->orWhereHas('shipment', fn($sq) => $sq->where('tracking_number', 'like', "%{$searchTerm}%")); // Contoh search resi
+            });
         }
 
-        $salesReports = $query->orderBy('o.created_at', 'desc')->get();
+        if (!empty($validated['status'])) {
+            $query->where('status', $validated['status']);
+        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $salesReports
+        // Hitung Agregat (berdasarkan filter, sebelum pagination)
+        $aggregateQuery = clone $query;
+        $reportSummary = $aggregateQuery->selectRaw('COUNT(*) as total_orders, SUM(total_amount) as total_sales')
+            ->first();
+
+        // Pagination
+        $perPage = $validated['per_page'] ?? 15;
+        $orders = $query->orderBy('created_at', 'desc')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return OrderResource::collection($orders)->additional([
+            'meta' => [
+                'report_summary' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'total_orders' => $reportSummary->total_orders ?? 0,
+                    'total_sales' => (int) ($reportSummary->total_sales ?? 0),
+                    'formatted_total_sales' => 'Rp ' . number_format($reportSummary->total_sales ?? 0, 0, ',', '.'),
+                ],
+            ]
         ]);
     }
 }

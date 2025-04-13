@@ -123,6 +123,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Order
     Route::get('/user/user_orders', [SiteUserOrderController::class, 'getUserOrder']);
     Route::get('/user/user_orders/{id}', [SiteUserOrderController::class, 'showUserOrder']);
+    Route::put('/user/user_orders/{order}/confirm-received', [SiteUserOrderController::class, 'confirmOrderReceived']);
 
     // Proudct Review
     Route::post('/user/product/{productId}/reviews', [SiteUserProductReviewController::class, 'store']);

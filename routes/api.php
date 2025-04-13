@@ -23,6 +23,8 @@ use App\Http\Controllers\SiteUser\ShipmentController as SiteUserShipmentControll
 use App\Http\Controllers\SiteUser\ShoppingCartController;
 use App\Http\Controllers\SiteUser\CollectionController;
 use App\Http\Controllers\SiteUser\ProductReviewController as SiteUserProductReviewController;
+use App\Http\Controllers\SiteUser\ProductSearchController;
+use App\Http\Controllers\SiteUser\RecommendationController;
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -113,6 +115,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/shopping_cart/{id}', [ShoppingCartController::class, 'updateCartItem']);
     Route::delete('/user/shopping_cart/{id}', [ShoppingCartController::class, 'removeCartItem']);
 
+    // Recommendation
+    Route::get('/user/recommendations/cart', [RecommendationController::class, 'getCartRecommendations']);
+
     // Address
     Route::get('/user/addresses', [AddressController::class, 'index']);
     Route::post('/user/addresses', [AddressController::class, 'store']);
@@ -152,3 +157,5 @@ Route::get('/user/product/{product}/reviews', [SiteUserProductReviewController::
 // Forgot Password
 Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail']);
 Route::post('/password/reset', [ForgotPasswordController::class, 'reset']);
+
+Route::get('/products/search', [ProductSearchController::class, 'search']);

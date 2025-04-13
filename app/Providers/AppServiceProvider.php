@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Product;
 use App\Models\ProductReview;
+use App\Observers\ProductObserver;
 use App\Policies\SiteUser\ProductReviewPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -27,5 +29,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         Gate::policy(ProductReview::class, ProductReviewPolicy::class);
+
+        Product::observe(ProductObserver::class);
     }
 }

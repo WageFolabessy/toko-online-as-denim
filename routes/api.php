@@ -126,10 +126,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/user_orders/{order}/confirm-received', [SiteUserOrderController::class, 'confirmOrderReceived']);
 
     // Proudct Review
-    Route::post('/user/product/{productId}/reviews', [SiteUserProductReviewController::class, 'store']);
-    Route::get('/user/product/{productId}/review-eligibility', [SiteUserProductReviewController::class, 'reviewEligibility']);
-    Route::put('/user/reviews/{reviewId}', [SiteUserProductReviewController::class, 'updateReview']);
-    Route::delete('/user/reviews/{reviewId}', [SiteUserProductReviewController::class, 'destroyReview']);
+    Route::post('/user/product/{product}/reviews', [SiteUserProductReviewController::class, 'store']);
+    Route::put('/user/reviews/{review}', [SiteUserProductReviewController::class, 'update']);
+    Route::delete('/user/reviews/{review}', [SiteUserProductReviewController::class, 'destroy']);
+    Route::get('/user/product/{product}/review-eligibility', [SiteUserProductReviewController::class, 'checkEligibility']);
     
     // Payment
     Route::post('/midtrans/snap-token', [SiteUserPaymentController::class, 'initiatePayment']);
@@ -146,7 +146,8 @@ Route::get('/user/product/{slug}/detail', [CollectionController::class, 'getProd
 Route::get('/user/get_latest_products', [CollectionController::class, 'getLatestProducts']);
 
 // Proudct Review
-Route::get('/user/product/{productId}/reviews', [SiteUserProductReviewController::class, 'index']);
+Route::get('/user/product/{product}/reviews', [SiteUserProductReviewController::class, 'index']);
+
 
 // Forgot Password
 Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail']);

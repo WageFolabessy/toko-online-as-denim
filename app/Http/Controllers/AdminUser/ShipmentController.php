@@ -15,12 +15,17 @@ class ShipmentController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Shipment::with([
+        $query = Shipment::query();
+
+        $query->whereHas('order.payment', function ($paymentQuery) {
+            $paymentQuery->whereIn('status', ['settlement', 'paid', 'success']);
+        });
+
+        $query->with([
             'order:id,order_number,site_user_id,address_id',
             'order.user:id,name',
             'order.address:id,recipient_name'
-        ])
-            ->orderBy('created_at', 'desc');
+        ]);
 
         if ($request->filled('search')) {
             $searchTerm = $request->input('search');
@@ -37,13 +42,17 @@ class ShipmentController extends Controller
         }
 
         if ($request->filled('status')) {
-            $validStatuses = ['pending', 'shipped', 'delivered']; // Dari skema
-            if (in_array($request->input('status'), $validStatuses)) {
-                $query->where('status', $request->input('status'));
+            $validStatuses = ['pending', 'shipped', 'delivered'];
+            $statusInput = $request->input('status');
+            if (in_array($statusInput, $validStatuses)) {
+                $query->where('status', $statusInput);
             }
         }
 
-        $shipments = $query->paginate($request->input('per_page', 15))->withQueryString();
+        $query->orderBy('created_at', 'desc');
+
+        $shipments = $query->paginate($request->input('per_page', 15))
+            ->withQueryString();
 
         return ShipmentResource::collection($shipments);
     }

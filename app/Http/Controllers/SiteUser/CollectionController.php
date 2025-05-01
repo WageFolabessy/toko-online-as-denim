@@ -28,17 +28,22 @@ class CollectionController extends Controller
     public function getAllProducts(Request $request)
     {
         $perPage = $request->input('per_page', 15);
+        $currentPage = $request->input('page', 1);
 
-        $products = Product::with([
-            'images' => function ($query) {
-                $query->select('id', 'product_id', 'image', 'is_primary');
-            },
-            'category' => function ($query) {
-                $query->select('id', 'category_name', 'slug', 'image');
-            }
-        ])
-            ->orderByRaw("CASE WHEN stock = 0 THEN 1 ELSE 0 END, updated_at DESC")
-            ->paginate($perPage);
+        $cacheKey = "all_products_page_{$currentPage}_per_page_{$perPage}";
+
+        $products = Cache::remember($cacheKey, 3600, function () use ($perPage) {
+            return Product::with([
+                'images' => function ($query) {
+                    $query->select('id', 'product_id', 'image', 'is_primary');
+                },
+                'category' => function ($query) {
+                    $query->select('id', 'category_name', 'slug', 'image');
+                }
+            ])
+                ->orderByRaw("CASE WHEN stock = 0 THEN 1 ELSE 0 END, updated_at DESC")
+                ->paginate($perPage);
+        });
 
         return new ProductsPaginatedResource($products);
     }

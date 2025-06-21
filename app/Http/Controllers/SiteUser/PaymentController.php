@@ -148,7 +148,7 @@ class PaymentController extends Controller
 
             $snapToken = Snap::getSnapToken($params);
 
-            return response()->json(['snapToken' => $snapToken, 'order_id' => $orderNumber]);
+            return response()->json(['snapToken' => $snapToken, 'order_id' => $orderNumber, 'id' => $order->id]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Midtrans Snap Exception: ' . $e->getMessage(), ['params' => $params ?? null, 'request' => $request->all()]);

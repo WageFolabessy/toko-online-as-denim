@@ -65,7 +65,6 @@ A production-ready RESTful API for an online clothing store built with Laravel 1
 - php artisan serve
 
 Optional background workers
-- Start queue worker (if you enable queued jobs): php artisan queue:work
 - Clear/optimize cache: php artisan cache:clear, php artisan config:cache
 
 ---
